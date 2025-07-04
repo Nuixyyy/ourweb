@@ -1206,7 +1206,7 @@
         if (reviewsData.length > 1) {
             reviewAutoChangeInterval = setInterval(() => {
                 showNextReview();
-            }, 3500); // تغيير كل 3 ثوان
+            }, 2500); // تغيير كل 3 ثوان
         }
     };
 

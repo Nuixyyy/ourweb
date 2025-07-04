@@ -52,6 +52,7 @@
     let currentUserProfile = null;
     window.currentUserId = null;
     let welcomeModalShown = false;
+    let productRatingsData = [];
 
     let firebaseReadyPromise;
     let resolveFirebaseReady;
@@ -186,6 +187,7 @@
                     await fetchAdminStatus();
                     setupRealtimeListeners();
                     fetchUserFavorites();
+            fetchProductRatings();
                 } else {
                     userId = null;
                     window.currentUserId = null;
@@ -239,10 +241,27 @@
                 uiElements.profileDetailsLogoutBtn.classList.remove('hidden');
                 uiElements.profileDetailsLoginBtn.classList.add('hidden');
                 
-                // إظهار أزرار التعديل للمستخدم الحالي فقط
+                // إظهار أزرار التعديل للمستخدم الحالي فقط وحسب حالة التعديل
                 if (window.currentUserId && window.currentUserId === userId) {
-                    document.getElementById('edit-name-btn').classList.remove('hidden');
-                    document.getElementById('edit-phone-btn').classList.remove('hidden');
+                    // إظهار زر تعديل الاسم فقط إذا لم يتم تعديله مسبقاً
+                    const editNameBtn = document.getElementById('edit-name-btn');
+                    if (editNameBtn) {
+                        if (userData.nameChanged) {
+                            editNameBtn.classList.add('hidden');
+                        } else {
+                            editNameBtn.classList.remove('hidden');
+                        }
+                    }
+                    
+                    // إظهار زر تعديل الهاتف فقط إذا لم يتم تعديله مسبقاً
+                    const editPhoneBtn = document.getElementById('edit-phone-btn');
+                    if (editPhoneBtn) {
+                        if (userData.phoneChanged) {
+                            editPhoneBtn.classList.add('hidden');
+                        } else {
+                            editPhoneBtn.classList.remove('hidden');
+                        }
+                    }
                 } else {
                     document.getElementById('edit-name-btn').classList.add('hidden');
                     document.getElementById('edit-phone-btn').classList.add('hidden');
@@ -351,6 +370,29 @@
             const category = categoriesData.find(cat => cat.id === product.categoryId);
             const categoryHTML = category ? `<p class="text-xs text-gray-600 mb-1">التصنيف: ${category.name}</p>` : '';
 
+            // حساب متوسط التقييمات للمنتج
+            const productRatings = productRatingsData.filter(rating => rating.productId === product.id);
+            let averageRating = 0;
+            let ratingHTML = '';
+            
+            if (productRatings.length > 0) {
+                const totalRating = productRatings.reduce((sum, rating) => sum + rating.rating, 0);
+                averageRating = totalRating / productRatings.length;
+                
+                ratingHTML = `
+                    <div class="flex items-center justify-center mb-2">
+                        <div class="flex">
+                            ${Array(5).fill(0).map((_, i) => `
+                                <svg class="w-4 h-4 ${i < Math.round(averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.729c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                </svg>
+                            `).join('')}
+                        </div>
+                        <span class="text-sm text-gray-600 mr-2">(${productRatings.length})</span>
+                    </div>
+                `;
+            }
+
             const productCard = `
                 <div id="product-${product.id}" class="product-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
                     <div class="relative product-image-container" data-product-id="${product.id}">
@@ -369,6 +411,7 @@
                         </div>
                     </div>
                     <div class="p-4 product-info-section" data-product-id="${product.id}">
+                        ${ratingHTML}
                         <h3 class="text-lg font-semibold text-gray-900">${product.name}</h3>
                         ${categoryHTML}
                         <p class="text-xs text-gray-500 mb-2">اضغط على المنتج لتعرف كافة التفاصيل</p>
@@ -982,6 +1025,17 @@
         uiElements.productDetailsBuyNow.dataset.productId = product.id;
         uiElements.productDetailsFavoriteBtn.dataset.productId = product.id;
 
+        // إظهار زر التقييم للمستخدمين المسجلين فقط
+        const productRateBtn = document.getElementById('product-details-rate-btn');
+        if (productRateBtn) {
+            if (userId && currentUserProfile) {
+                productRateBtn.classList.remove('hidden');
+                productRateBtn.dataset.productId = product.id;
+            } else {
+                productRateBtn.classList.add('hidden');
+            }
+        }
+
         uiElements.productDetailsModal.classList.remove('hidden');
     };
 
@@ -1206,7 +1260,7 @@
         if (reviewsData.length > 1) {
             reviewAutoChangeInterval = setInterval(() => {
                 showNextReview();
-            }, 2500); // تغيير كل 3 ثوان
+            }, 3500); // تغيير كل 3 ثوان
         }
     };
 
@@ -1232,6 +1286,27 @@
             });
         } catch (error) {
             console.error("Error setting up offers listener:", error);
+        }
+    };
+
+    const fetchProductRatings = async () => {
+        try {
+            const ratingsColRef = collection(db, 'productRatings');
+            onSnapshot(ratingsColRef, (snapshot) => {
+                productRatingsData = [];
+                snapshot.forEach((doc) => {
+                    productRatingsData.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("Product ratings data fetched:", productRatingsData);
+                // إعادة عرض المنتجات لتحديث التقييمات
+                if (productsData.length > 0) {
+                    displayProducts(productsData);
+                }
+            }, (error) => {
+                console.error("Error fetching product ratings:", error);
+            });
+        } catch (error) {
+            console.error("Error setting up product ratings listener:", error);
         }
     };
 
@@ -1534,50 +1609,99 @@
                 console.log("Attempting to register/login with:", { fullName, fullPhoneNumber });
 
                 try {
-             
-                    if (!userId && auth.currentUser) {
-                        userId = auth.currentUser.uid;
-                    } else if (!userId) {
-                        await signInAnonymously(auth);
-                        userId = auth.currentUser.uid;
+                    // البحث عن مستخدم موجود برقم الهاتف نفسه
+                    const usersRef = collection(db, 'users');
+                    const allUsersSnapshot = await getDocs(usersRef);
+                    let existingUserId = null;
+                    let existingUserData = null;
+
+                    // البحث في جميع المستخدمين للعثور على رقم الهاتف
+                    for (const userDoc of allUsersSnapshot.docs) {
+                        const userProfileRef = doc(db, `users/${userDoc.id}/userProfile`, userDoc.id);
+                        const userProfileSnap = await getDoc(userProfileRef);
+                        
+                        if (userProfileSnap.exists() && userProfileSnap.data().phoneNumber === fullPhoneNumber) {
+                            existingUserId = userDoc.id;
+                            existingUserData = userProfileSnap.data();
+                            console.log("Found existing user with same phone number:", existingUserId);
+                            break;
+                        }
                     }
 
-                  
-                    const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
-                    const userDocSnap = await getDoc(userDocRef);
+                    if (existingUserId) {
+                        // إذا وُجد مستخدم برقم الهاتف نفسه، قم بتسجيل الدخول إليه
+                        if (!userId && auth.currentUser) {
+                            await signOut(auth);
+                        }
+                        
+                        await signInAnonymously(auth);
+                        const newAnonymousUser = auth.currentUser;
+                        
+                        // نسخ بيانات المستخدم الموجود إلى المستخدم الحالي
+                        userId = newAnonymousUser.uid;
+                        window.currentUserId = userId;
+                        
+                        const newUserDocRef = doc(db, `users/${userId}/userProfile`, userId);
+                        await setDoc(newUserDocRef, {
+                            ...existingUserData,
+                            fullName: fullName, // تحديث الاسم إذا كان مختلفاً
+                            gender: gender, // تحديث الجنس إذا كان مختلفاً
+                            profilePicUrl: gender === 'male' ? './boy.png' : './girl.png',
+                            lastLogin: new Date().toISOString()
+                        });
 
-                    const profilePicUrl = gender === 'male' ? './boy.png' : './girl.png';
-                    
-                    if (userDocSnap.exists()) {
-                       
-                        console.log("Updating existing user profile:", userId);
-                        await setDoc(userDocRef, {
-                            fullName: fullName,
-                            phoneNumber: fullPhoneNumber,
-                            gender: gender,
-                            profilePicUrl: profilePicUrl,
-                            createdAt: userDocSnap.data().createdAt || new Date().toISOString(),
-                            completedOrders: userDocSnap.data().completedOrders || 0
-                        }, { merge: true });
-                        alertUserMessage('تم تحديث بيانات الحساب بنجاح!', 'success');
+                        // نسخ السلة والمفضلات من الحساب الموجود
+                        try {
+                            const oldCartRef = collection(db, `users/${existingUserId}/cart`);
+                            const oldCartSnapshot = await getDocs(oldCartRef);
+                            
+                            for (const cartDoc of oldCartSnapshot.docs) {
+                                const newCartRef = doc(db, `users/${userId}/cart`, cartDoc.id);
+                                await setDoc(newCartRef, cartDoc.data());
+                            }
+
+                            const oldFavoritesRef = collection(db, `users/${existingUserId}/favorites`);
+                            const oldFavoritesSnapshot = await getDocs(oldFavoritesRef);
+                            
+                            for (const favDoc of oldFavoritesSnapshot.docs) {
+                                const newFavRef = doc(db, `users/${userId}/favorites`, favDoc.id);
+                                await setDoc(newFavRef, favDoc.data());
+                            }
+                        } catch (copyError) {
+                            console.warn("خطأ في نسخ البيانات:", copyError);
+                        }
+
+                        alertUserMessage('مرحباً بعودتك! تم تسجيل الدخول بنجاح.', 'success');
+                        
                     } else {
-                      
-                        console.log("Creating new user profile:", userId);
+                        // إنشاء مستخدم جديد
+                        if (!userId && auth.currentUser) {
+                            userId = auth.currentUser.uid;
+                        } else if (!userId) {
+                            await signInAnonymously(auth);
+                            userId = auth.currentUser.uid;
+                        }
+
+                        const profilePicUrl = gender === 'male' ? './boy.png' : './girl.png';
+                        const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
+                        
                         await setDoc(userDocRef, {
                             fullName: fullName,
                             phoneNumber: fullPhoneNumber,
                             gender: gender,
                             profilePicUrl: profilePicUrl,
                             createdAt: new Date().toISOString(),
-                            completedOrders: 0
+                            completedOrders: 0,
+                            nameChanged: false,
+                            phoneChanged: false
                         });
+
+                        console.log("Created new user profile:", userId);
                         alertUserMessage('تم إنشاء حساب جديد بنجاح!', 'success');
                     }
 
                     await fetchAdminStatus();
                     console.log("Admin status checked after registration. Is Admin:", isAdmin);
-
-                    alertUserMessage('تم التسجيل/تسجيل الدخول بنجاح!', 'success');
 
                     setTimeout(() => {
                         uiElements.loginModal.classList.add('hidden');
@@ -2601,6 +2725,61 @@
                 }
             });
         }
+
+        // أحداث تقييم المنتجات
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#product-details-rate-btn')) {
+                const productId = e.target.closest('#product-details-rate-btn').dataset.productId;
+                openProductRatingModal(productId);
+            }
+        });
+
+        const productRatingModal = document.getElementById('product-rating-modal');
+        if (productRatingModal) {
+            const closeBtn = document.getElementById('close-product-rating-modal');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    productRatingModal.classList.add('hidden');
+                });
+            }
+
+            productRatingModal.addEventListener('click', (e) => {
+                if (e.target === productRatingModal) {
+                    productRatingModal.classList.add('hidden');
+                }
+            });
+
+            const ratingForm = document.getElementById('product-rating-form');
+            if (ratingForm) {
+                ratingForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const productId = document.getElementById('rating-product-id').value;
+                    const rating = parseInt(document.getElementById('product-rating-value').value);
+                    
+                    if (!rating || rating < 1 || rating > 5) {
+                        alertUserMessage('الرجاء اختيار تقييم من 1 إلى 5 نجوم.', 'error');
+                        return;
+                    }
+
+                    try {
+                        const ratingsColRef = collection(db, 'productRatings');
+                        await addDoc(ratingsColRef, {
+                            productId: productId,
+                            userId: userId,
+                            rating: rating,
+                            createdAt: new Date().toISOString()
+                        });
+
+                        alertUserMessage('تم إرسال التقييم بنجاح!', 'success');
+                        productRatingModal.classList.add('hidden');
+                    } catch (error) {
+                        console.error('Error adding product rating:', error);
+                        alertUserMessage(`فشل إرسال التقييم: ${error.message}`, 'error');
+                    }
+                });
+            }
+        }
     };
 
     const waitForFirebase = () => {
@@ -2645,6 +2824,18 @@
             return;
         }
 
+        // التحقق من التعديل السابق
+        if (currentUserProfile.nameChanged) {
+            alertUserMessage('لقد قمت بتعديل الاسم مسبقاً. لا يمكن تعديله مرة أخرى.', 'warning');
+            return;
+        }
+
+        // إظهار رسالة تحذير
+        const confirmEdit = await showConfirmationMessage('تنبيه: يمكنك تعديل الاسم مرة واحدة فقط. هل أنت متأكد من المتابعة؟');
+        if (!confirmEdit) {
+            return;
+        }
+
         // إنشاء نافذة تعديل الاسم
         const editNameModal = document.createElement('div');
         editNameModal.className = 'modal-overlay';
@@ -2652,6 +2843,9 @@
             <div class="modal-content bg-gray-800 max-w-md">
                 <span class="modal-close-btn cursor-pointer text-2xl">&times;</span>
                 <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">تعديل الاسم</h3>
+                <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
+                    <p class="text-sm font-medium">⚠️ تذكير: هذا التعديل لمرة واحدة فقط</p>
+                </div>
                 <form id="edit-name-form" class="space-y-4">
                     <div>
                         <label for="new-name" class="block text-sm font-medium text-gray-700 mb-2">الاسم الكامل الجديد</label>
@@ -2697,8 +2891,11 @@
             if (newName !== currentUserProfile.fullName) {
                 try {
                     const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
-                    await updateDoc(userDocRef, { fullName: newName });
-                    alertUserMessage('تم تحديث الاسم بنجاح!', 'success');
+                    await updateDoc(userDocRef, { 
+                        fullName: newName,
+                        nameChanged: true
+                    });
+                    alertUserMessage('تم تحديث الاسم بنجاح! لا يمكن تعديله مرة أخرى.', 'success');
                     await fetchUserProfile(userId);
                     editNameModal.remove();
                 } catch (error) {
@@ -2717,6 +2914,18 @@
             return;
         }
 
+        // التحقق من التعديل السابق
+        if (currentUserProfile.phoneChanged) {
+            alertUserMessage('لقد قمت بتعديل رقم الهاتف مسبقاً. لا يمكن تعديله مرة أخرى.', 'warning');
+            return;
+        }
+
+        // إظهار رسالة تحذير
+        const confirmEdit = await showConfirmationMessage('تنبيه: يمكنك تعديل رقم الهاتف مرة واحدة فقط. هل أنت متأكد من المتابعة؟');
+        if (!confirmEdit) {
+            return;
+        }
+
         const currentPhone = currentUserProfile.phoneNumber.replace('+964', '');
 
         // إنشاء نافذة تعديل رقم الهاتف
@@ -2726,6 +2935,9 @@
             <div class="modal-content bg-gray-800 max-w-md">
                 <span class="modal-close-btn cursor-pointer text-2xl">&times;</span>
                 <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">تعديل رقم الهاتف</h3>
+                <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
+                    <p class="text-sm font-medium">⚠️ تذكير: هذا التعديل لمرة واحدة فقط</p>
+                </div>
                 <form id="edit-phone-form" class="space-y-4">
                     <div>
                         <label for="new-phone" class="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف الجديد</label>
@@ -2781,8 +2993,11 @@
             if (newPhone !== currentPhone) {
                 try {
                     const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
-                    await updateDoc(userDocRef, { phoneNumber: '+964' + newPhone });
-                    alertUserMessage('تم تحديث رقم الهاتف بنجاح!', 'success');
+                    await updateDoc(userDocRef, { 
+                        phoneNumber: '+964' + newPhone,
+                        phoneChanged: true
+                    });
+                    alertUserMessage('تم تحديث رقم الهاتف بنجاح! لا يمكن تعديله مرة أخرى.', 'success');
                     await fetchUserProfile(userId);
                     editPhoneModal.remove();
                 } catch (error) {
@@ -2947,7 +3162,12 @@
             welcomeModal: document.getElementById('welcome-modal'),
             closeWelcomeModal: document.getElementById('close-welcome-modal'),
             welcomeLoginBtn: document.getElementById('welcome-login-btn'),
-            welcomeBrowseBtn: document.getElementById('welcome-browse-btn')
+            welcomeBrowseBtn: document.getElementById('welcome-browse-btn'),
+            
+            productRatingModal: document.getElementById('product-rating-modal'),
+            closeProductRatingModal: document.getElementById('close-product-rating-modal'),
+            productRatingForm: document.getElementById('product-rating-form'),
+            productDetailsRateBtn: document.getElementById('product-details-rate-btn')
         };
 
         updateNotification();
@@ -3006,6 +3226,59 @@
 
     const hideWelcomeModal = () => {
         uiElements.welcomeModal.classList.add('hidden');
+    };
+
+    const openProductRatingModal = (productId) => {
+        if (!userId || !currentUserProfile) {
+            alertUserMessage('يجب تسجيل الدخول أولاً لتقييم المنتج.', 'warning');
+            return;
+        }
+
+        // التحقق من وجود تقييم سابق من نفس المستخدم
+        const existingRating = productRatingsData.find(rating => 
+            rating.productId === productId && rating.userId === userId
+        );
+
+        if (existingRating) {
+            alertUserMessage('لقد قمت بتقييم هذا المنتج مسبقاً.', 'warning');
+            return;
+        }
+
+        const productRatingModal = document.getElementById('product-rating-modal');
+        if (!productRatingModal) return;
+
+        document.getElementById('rating-product-id').value = productId;
+        document.getElementById('product-rating-value').value = '0';
+        document.getElementById('current-product-rating-text').textContent = 'لم يتم الاختيار';
+
+        // إعادة تعيين النجوم
+        const stars = productRatingModal.querySelectorAll('.product-rating-star');
+        stars.forEach(star => {
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-gray-300');
+        });
+
+        // إضافة أحداث النجوم
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                const rating = index + 1;
+                document.getElementById('product-rating-value').value = rating;
+                document.getElementById('current-product-rating-text').textContent = `${rating} من 5 نجوم`;
+                
+                // تحديث ألوان النجوم
+                stars.forEach((s, i) => {
+                    if (i < rating) {
+                        s.classList.remove('text-gray-300');
+                        s.classList.add('text-yellow-400');
+                    } else {
+                        s.classList.remove('text-yellow-400');
+                        s.classList.add('text-gray-300');
+                    }
+                });
+            });
+        });
+
+        productRatingModal.classList.remove('hidden');
     };
 
     const populateCategoryOptions = () => {

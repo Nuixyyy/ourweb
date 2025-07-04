@@ -2,7 +2,7 @@
 
 body {
     font-family: 'Noto Sans Arabic', sans-serif;
-    background: linear-gradient(135deg, #2d0b11 0%, #5b1323 50%, #8b1d35 100%);
+    background: linear-gradient(135deg, #00224D 0%, #5D0E41 50%, #A0153E 100%);
     color: #f5f5f5;
     scroll-behavior: smooth;
     padding-bottom: 70px;
@@ -11,8 +11,8 @@ body {
 }
 
 .bg-white { 
-    background: linear-gradient(145deg, #5b1323, #7a1a2f);
-    border: 1px solid #8b1d35;
+    background: linear-gradient(145deg, #5D0E41, #A0153E);
+    border: 1px solid #FF204E;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -45,17 +45,17 @@ body {
 
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(45, 11, 17, 0.85);
+    background: rgba(0, 34, 77, 0.85);
     backdrop-filter: blur(12px);
     display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
 
 .modal-content {
-    background: linear-gradient(145deg, #5b1323, #7a1a2f);
+    background: linear-gradient(145deg, #5D0E41, #A0153E);
     color: #f5f5f5;
     padding: 2rem; border-radius: 1.5rem;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
-    border: 1px solid #8b1d35;
+    border: 1px solid #FF204E;
     max-width: 90%; width: 500px; position: relative;
     max-height: 90vh;
     overflow-y: auto;
@@ -117,9 +117,9 @@ body {
 
 .bottom-navbar {
     position: fixed; bottom: 0; left: 0; width: 100%;
-    background: linear-gradient(145deg, #5b1323, #7a1a2f);
+    background: linear-gradient(145deg, #5D0E41, #A0153E);
     backdrop-filter: blur(12px);
-    border-top: 1px solid #8b1d35;
+    border-top: 1px solid #FF204E;
     box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.5);
     z-index: 900; display: flex; justify-content: space-around;
     align-items: center; padding: 10px 0;
@@ -213,9 +213,18 @@ body {
 }
 
 .review-card .star-rating svg {
+    transition: all 0.3s ease;
+}
+
+.review-card .star-rating svg.text-yellow-400 {
     fill: #fbbf24;
     color: #fbbf24;
-    transition: all 0.3s ease;
+}
+
+.review-card .star-rating svg.text-gray-400 {
+    fill: none;
+    color: #9ca3af;
+    stroke: #9ca3af;
 }
 
 .review-card .star-rating svg:hover {
@@ -240,19 +249,25 @@ body {
     gap: 5px;
 }
 
-.review-actions button {
-    background: rgba(0, 0, 0, 0.5);
+.review-action-btn {
+    background: rgba(0, 0, 0, 0.7);
     border: none;
     color: white;
-    padding: 5px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: 8px;
+    border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.review-actions button:hover {
-    background: rgba(0, 0, 0, 0.8);
+.review-action-btn.edit-btn:hover {
+    background: #3b82f6;
+}
+
+.review-action-btn.delete-btn:hover {
+    background: #ef4444;
 }
 
 #prev-review-btn, #next-review-btn {
@@ -273,6 +288,33 @@ body {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.star-btn:hover {
+    transform: scale(1.1);
+}
+
+.star-btn:active {
+    transform: scale(0.95);
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.modal-content .flex button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .bg-gray-50 {
@@ -352,19 +394,21 @@ body {
 }
 
 .product-card .brand-text {
-    color: white !important;
+    color: #f5f5f5 !important;
+    font-weight: 600;
 }
 
 .product-card .product-name {
-    color: #000000 !important;
+    color: #ffffff !important;
+    font-weight: 700;
 }
 
 .product-card .product-details-text {
-    color: white !important;
+    color: #e6d7db !important;
 }
 
 .product-card .category-text {
-    color: white !important;
+    color: #d1c7cb !important;
 }
 
 /* Price styling with discount */

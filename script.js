@@ -50,6 +50,8 @@
     let isAdmin = false;
     let firebaseInitialized = false;
     let currentUserProfile = null;
+    window.currentUserId = null;
+    let welcomeModalShown = false;
 
     let firebaseReadyPromise;
     let resolveFirebaseReady;
@@ -178,6 +180,7 @@
             const unsubscribe = onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
+                    window.currentUserId = userId;
                     console.log("Authenticated with UID:", userId);
                     await fetchUserProfile(userId);
                     await fetchAdminStatus();
@@ -185,6 +188,7 @@
                     fetchUserFavorites();
                 } else {
                     userId = null;
+                    window.currentUserId = null;
                     isAdmin = false;
                     console.log("User logged out or not authenticated.");
                     updateUIForLoggedOutUser();
@@ -234,6 +238,15 @@
 
                 uiElements.profileDetailsLogoutBtn.classList.remove('hidden');
                 uiElements.profileDetailsLoginBtn.classList.add('hidden');
+                
+                // إظهار أزرار التعديل للمستخدم الحالي فقط
+                if (window.currentUserId && window.currentUserId === userId) {
+                    document.getElementById('edit-name-btn').classList.remove('hidden');
+                    document.getElementById('edit-phone-btn').classList.remove('hidden');
+                } else {
+                    document.getElementById('edit-name-btn').classList.add('hidden');
+                    document.getElementById('edit-phone-btn').classList.add('hidden');
+                }
 
                 updateAddReviewButtonVisibility();
 
@@ -371,15 +384,17 @@
                         </div>
                         ${isAvailable ? `
                         <div class="flex gap-2">
-                            <button data-product-id="${product.id}" class="add-to-cart-btn icon-btn flex-1 bg-indigo-600 text-white py-2 px-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 flex items-center justify-center">
+                            <button data-product-id="${product.id}" class="add-to-cart-btn flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 flex items-center justify-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                                 </svg>
+                                <span class="text-sm">للسلة</span>
                             </button>
-                            <button data-product-id="${product.id}" class="buy-now-btn icon-btn flex-1 bg-green-600 text-white py-2 px-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 flex items-center justify-center">
+                            <button data-product-id="${product.id}" class="buy-now-btn flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 flex items-center justify-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v6M4 16h6m4 0v6m-6-6h6"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                 </svg>
+                                <span class="text-sm">اشتري</span>
                             </button>
                         </div>
                         ` : ''}
@@ -979,8 +994,8 @@
      
         const rating = parseInt(review.rating) || 0;
         const starHtml = Array(5).fill(0).map((_, i) => `
-            <svg class="w-5 h-5 ${i < rating ? 'text-yellow-500' : 'text-gray-400'}" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.729c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
+            <svg class="w-5 h-5 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-400'}" fill="${i < rating ? 'currentColor' : 'none'}" stroke="${i < rating ? 'none' : 'currentColor'}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.729c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
             </svg>
         `).join('');
 
@@ -988,8 +1003,20 @@
         if (userId === review.userId || isAdmin) {
             actionButtons = `
                 <div class="review-actions">
-                    ${userId === review.userId ? `<button onclick="editReview('${review.id}')">تعديل</button>` : ''}
-                    ${(userId === review.userId || isAdmin) ? `<button onclick="deleteReview('${review.id}')">حذف</button>` : ''}
+                    ${userId === review.userId ? `
+                        <button onclick="editReview('${review.id}')" class="review-action-btn edit-btn">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                    ` : ''}
+                    ${(userId === review.userId || isAdmin) ? `
+                        <button onclick="deleteReview('${review.id}')" class="review-action-btn delete-btn">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    ` : ''}
                 </div>
             `;
         }
@@ -1011,22 +1038,113 @@
         const review = reviewsData.find(r => r.id === reviewId);
         if (!review || (userId !== review.userId && !isAdmin)) return;
 
-        const newText = prompt('النص الجديد للتقييم:', review.reviewText);
-        const newRating = prompt('التقييم الجديد (1-5):', review.rating);
+        // إنشاء نافذة تعديل التقييم
+        const editReviewModal = document.createElement('div');
+        editReviewModal.className = 'modal-overlay';
+        editReviewModal.innerHTML = `
+            <div class="modal-content bg-gray-800 max-w-lg">
+                <span class="modal-close-btn cursor-pointer text-2xl">&times;</span>
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">تعديل التقييم</h3>
+                <form id="edit-review-form" class="space-y-6">
+                    <div>
+                        <label for="edit-review-text" class="block text-sm font-medium text-gray-700 mb-2">نص التقييم</label>
+                        <textarea id="edit-review-text" rows="4" 
+                                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900" 
+                                  required maxlength="500">${review.reviewText}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">الحد الأقصى 500 حرف</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">التقييم (اختر عدد النجوم)</label>
+                        <div class="flex justify-center gap-2">
+                            ${Array(5).fill(0).map((_, i) => `
+                                <button type="button" class="star-btn w-12 h-12 text-3xl ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400 transition-colors duration-200" data-rating="${i + 1}">
+                                    ★
+                                </button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="edit-review-rating" value="${review.rating}">
+                        <p class="text-center text-sm text-gray-600 mt-2">التقييم الحالي: <span id="current-rating-text">${review.rating}</span> من 5 نجوم</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                            حفظ التعديلات
+                        </button>
+                        <button type="button" class="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300" onclick="this.closest('.modal-overlay').remove()">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
 
-        if (newText && newRating && parseInt(newRating) >= 1 && parseInt(newRating) <= 5) {
+        document.body.appendChild(editReviewModal);
+
+        // إضافة الأحداث للنجوم
+        const starBtns = editReviewModal.querySelectorAll('.star-btn');
+        const ratingInput = editReviewModal.querySelector('#edit-review-rating');
+        const currentRatingText = editReviewModal.querySelector('#current-rating-text');
+
+        starBtns.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                const rating = index + 1;
+                ratingInput.value = rating;
+                currentRatingText.textContent = rating;
+                
+                // تحديث ألوان النجوم
+                starBtns.forEach((star, i) => {
+                    if (i < rating) {
+                        star.classList.remove('text-gray-300');
+                        star.classList.add('text-yellow-400');
+                    } else {
+                        star.classList.remove('text-yellow-400');
+                        star.classList.add('text-gray-300');
+                    }
+                });
+            });
+        });
+
+        // إغلاق النافذة
+        editReviewModal.querySelector('.modal-close-btn').addEventListener('click', () => {
+            editReviewModal.remove();
+        });
+
+        editReviewModal.addEventListener('click', (e) => {
+            if (e.target === editReviewModal) {
+                editReviewModal.remove();
+            }
+        });
+
+        // إرسال النموذج
+        editReviewModal.querySelector('#edit-review-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newText = document.getElementById('edit-review-text').value.trim();
+            const newRating = parseInt(document.getElementById('edit-review-rating').value);
+
+            if (!newText) {
+                alertUserMessage('الرجاء إدخال نص التقييم.', 'error');
+                return;
+            }
+
+            if (newRating < 1 || newRating > 5) {
+                alertUserMessage('الرجاء اختيار تقييم من 1 إلى 5 نجوم.', 'error');
+                return;
+            }
+
             try {
                 const reviewDocRef = doc(db, 'reviews', reviewId);
                 await updateDoc(reviewDocRef, {
                     reviewText: newText,
-                    rating: parseInt(newRating)
+                    rating: newRating
                 });
                 alertUserMessage('تم تعديل التقييم بنجاح!', 'success');
+                editReviewModal.remove();
             } catch (error) {
                 console.error('Error updating review:', error);
                 alertUserMessage(`فشل تعديل التقييم: ${error.message}`, 'error');
             }
-        }
+        });
     };
 
     window.deleteReview = async (reviewId) => {
@@ -1088,7 +1206,7 @@
         if (reviewsData.length > 1) {
             reviewAutoChangeInterval = setInterval(() => {
                 showNextReview();
-            }, 2000); // تغيير كل 3 ثوان
+            }, 3500); // تغيير كل 3 ثوان
         }
     };
 
@@ -1399,8 +1517,9 @@
 
                 const fullName = uiElements.fullNameInput.value.trim();
                 let phoneNumberDigits = uiElements.phoneNumberInput.value.trim();
+                const gender = document.getElementById('gender').value;
 
-                if (!fullName || !phoneNumberDigits) {
+                if (!fullName || !phoneNumberDigits || !gender) {
                     alertUserMessage('الرجاء تعبئة جميع الحقول.', 'error');
                     return;
                 }
@@ -1427,13 +1546,16 @@
                     const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
                     const userDocSnap = await getDoc(userDocRef);
 
+                    const profilePicUrl = gender === 'male' ? './boy.png' : './girl.png';
+                    
                     if (userDocSnap.exists()) {
                        
                         console.log("Updating existing user profile:", userId);
                         await setDoc(userDocRef, {
                             fullName: fullName,
                             phoneNumber: fullPhoneNumber,
-                            profilePicUrl: userDocSnap.data().profilePicUrl || 'https://placehold.co/100x100/eeeeee/333333?text=User',
+                            gender: gender,
+                            profilePicUrl: profilePicUrl,
                             createdAt: userDocSnap.data().createdAt || new Date().toISOString(),
                             completedOrders: userDocSnap.data().completedOrders || 0
                         }, { merge: true });
@@ -1444,7 +1566,8 @@
                         await setDoc(userDocRef, {
                             fullName: fullName,
                             phoneNumber: fullPhoneNumber,
-                            profilePicUrl: 'https://placehold.co/100x100/eeeeee/333333?text=User',
+                            gender: gender,
+                            profilePicUrl: profilePicUrl,
                             createdAt: new Date().toISOString(),
                             completedOrders: 0
                         });
@@ -1922,11 +2045,11 @@
                 uiElements.searchModal.classList.add('hidden');
             });
         }
-        if (uiElements.executeSearchBtn && uiElements.searchInput && uiElements.searchResultsContainer) {
+        if (uiElements.searchInput && uiElements.searchResultsContainer) {
             const performSearch = () => {
                 const query = uiElements.searchInput.value.toLowerCase().trim();
                 if (query === '') {
-                    uiElements.searchResultsContainer.innerHTML = '<p class="text-center text-gray-500">الرجاء إدخال كلمة للبحث.</p>';
+                    uiElements.searchResultsContainer.innerHTML = '<p class="text-center text-gray-500">ابدأ البحث بكتابة اسم المنتج...</p>';
                     return;
                 }
 
@@ -1968,12 +2091,12 @@
                 }
             };
 
-            uiElements.executeSearchBtn.addEventListener('click', performSearch);
             uiElements.searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     performSearch();
                 }
             });
+            uiElements.searchInput.addEventListener('input', performSearch);
         }
 
         if (uiElements.closeProductDetailsModal) {
@@ -2048,6 +2171,32 @@
                 displayProducts(productsData);
                 uiElements.categoriesModal.classList.add('hidden');
             }
+        });
+
+        // إغلاق القوائم المنبثقة بالنقر خارجها
+        document.addEventListener('click', (e) => {
+            const modals = [
+                uiElements.searchModal,
+                uiElements.categoriesModal,
+                uiElements.loginModal,
+                uiElements.addProductModal,
+                uiElements.editProductModal,
+                uiElements.shoppingCartModal,
+                uiElements.checkoutModal,
+                uiElements.profileDetailsModal,
+                uiElements.productDetailsModal,
+                uiElements.addReviewModal,
+                uiElements.addCategoryModal,
+                uiElements.addOfferModal,
+                uiElements.discountCodesModal,
+                uiElements.welcomeModal
+            ];
+
+            modals.forEach(modal => {
+                if (modal && !modal.classList.contains('hidden') && e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
         });
 
         if (uiElements.addReviewBtn) {
@@ -2414,6 +2563,44 @@
                 }
             });
         }
+
+        // تعديل الاسم
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#edit-name-btn')) {
+                editUserName();
+            }
+        });
+
+        // تعديل رقم الهاتف
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#edit-phone-btn')) {
+                editUserPhone();
+            }
+        });
+
+        // أحداث نافذة الترحيب
+        if (uiElements.closeWelcomeModal) {
+            uiElements.closeWelcomeModal.addEventListener('click', hideWelcomeModal);
+        }
+
+        if (uiElements.welcomeLoginBtn) {
+            uiElements.welcomeLoginBtn.addEventListener('click', () => {
+                hideWelcomeModal();
+                uiElements.loginModal.classList.remove('hidden');
+            });
+        }
+
+        if (uiElements.welcomeBrowseBtn) {
+            uiElements.welcomeBrowseBtn.addEventListener('click', hideWelcomeModal);
+        }
+
+        if (uiElements.welcomeModal) {
+            uiElements.welcomeModal.addEventListener('click', (e) => {
+                if (e.target === uiElements.welcomeModal) {
+                    hideWelcomeModal();
+                }
+            });
+        }
     };
 
     const waitForFirebase = () => {
@@ -2448,6 +2635,162 @@
             } else {
                 console.log("Waiting for Firebase SDK to load...");
                 setTimeout(checkFirebase, 100);
+            }
+        });
+    };
+
+    const editUserName = async () => {
+        if (!userId || !currentUserProfile) {
+            alertUserMessage('يجب تسجيل الدخول أولاً.', 'error');
+            return;
+        }
+
+        // إنشاء نافذة تعديل الاسم
+        const editNameModal = document.createElement('div');
+        editNameModal.className = 'modal-overlay';
+        editNameModal.innerHTML = `
+            <div class="modal-content bg-gray-800 max-w-md">
+                <span class="modal-close-btn cursor-pointer text-2xl">&times;</span>
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">تعديل الاسم</h3>
+                <form id="edit-name-form" class="space-y-4">
+                    <div>
+                        <label for="new-name" class="block text-sm font-medium text-gray-700 mb-2">الاسم الكامل الجديد</label>
+                        <input type="text" id="new-name" value="${currentUserProfile.fullName}" 
+                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 text-lg" 
+                               required minlength="3" maxlength="50">
+                        <p class="text-xs text-gray-500 mt-1">يجب أن يكون الاسم من 3 إلى 50 حرف</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                            حفظ التغييرات
+                        </button>
+                        <button type="button" class="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300" onclick="this.closest('.modal-overlay').remove()">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(editNameModal);
+
+        // إضافة الأحداث
+        editNameModal.querySelector('.modal-close-btn').addEventListener('click', () => {
+            editNameModal.remove();
+        });
+
+        editNameModal.addEventListener('click', (e) => {
+            if (e.target === editNameModal) {
+                editNameModal.remove();
+            }
+        });
+
+        editNameModal.querySelector('#edit-name-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('new-name').value.trim();
+
+            if (newName.length < 3) {
+                alertUserMessage('يجب أن يكون الاسم 3 أحرف على الأقل.', 'error');
+                return;
+            }
+
+            if (newName !== currentUserProfile.fullName) {
+                try {
+                    const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
+                    await updateDoc(userDocRef, { fullName: newName });
+                    alertUserMessage('تم تحديث الاسم بنجاح!', 'success');
+                    await fetchUserProfile(userId);
+                    editNameModal.remove();
+                } catch (error) {
+                    console.error('Error updating name:', error);
+                    alertUserMessage(`فشل تحديث الاسم: ${error.message}`, 'error');
+                }
+            } else {
+                editNameModal.remove();
+            }
+        });
+    };
+
+    const editUserPhone = async () => {
+        if (!userId || !currentUserProfile) {
+            alertUserMessage('يجب تسجيل الدخول أولاً.', 'error');
+            return;
+        }
+
+        const currentPhone = currentUserProfile.phoneNumber.replace('+964', '');
+
+        // إنشاء نافذة تعديل رقم الهاتف
+        const editPhoneModal = document.createElement('div');
+        editPhoneModal.className = 'modal-overlay';
+        editPhoneModal.innerHTML = `
+            <div class="modal-content bg-gray-800 max-w-md">
+                <span class="modal-close-btn cursor-pointer text-2xl">&times;</span>
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-6">تعديل رقم الهاتف</h3>
+                <form id="edit-phone-form" class="space-y-4">
+                    <div>
+                        <label for="new-phone" class="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف الجديد</label>
+                        <div class="flex items-center">
+                            <span class="bg-gray-200 text-gray-700 py-3 px-4 rounded-l-lg border border-r-0 border-gray-300 font-medium text-lg">+964</span>
+                            <input type="tel" id="new-phone" value="${currentPhone}" 
+                                   class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 text-lg" 
+                                   required pattern="[0-9]{11}" maxlength="11" placeholder="07701234567">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">يجب إدخال 11 رقماً بدقة (مثال: 07701234567)</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                            حفظ التغييرات
+                        </button>
+                        <button type="button" class="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition duration-300" onclick="this.closest('.modal-overlay').remove()">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(editPhoneModal);
+
+        // إضافة الأحداث
+        editPhoneModal.querySelector('.modal-close-btn').addEventListener('click', () => {
+            editPhoneModal.remove();
+        });
+
+        editPhoneModal.addEventListener('click', (e) => {
+            if (e.target === editPhoneModal) {
+                editPhoneModal.remove();
+            }
+        });
+
+        // التحقق من صحة الإدخال أثناء الكتابة
+        const phoneInput = editPhoneModal.querySelector('#new-phone');
+        phoneInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
+        editPhoneModal.querySelector('#edit-phone-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPhone = document.getElementById('new-phone').value.trim();
+
+            const phoneRegex = /^[0-9]{11}$/;
+            if (!phoneRegex.test(newPhone)) {
+                alertUserMessage('الرجاء إدخال 11 رقماً صحيحاً بدون رمز الدولة (+964)', 'error');
+                return;
+            }
+
+            if (newPhone !== currentPhone) {
+                try {
+                    const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
+                    await updateDoc(userDocRef, { phoneNumber: '+964' + newPhone });
+                    alertUserMessage('تم تحديث رقم الهاتف بنجاح!', 'success');
+                    await fetchUserProfile(userId);
+                    editPhoneModal.remove();
+                } catch (error) {
+                    console.error('Error updating phone:', error);
+                    alertUserMessage(`فشل تحديث رقم الهاتف: ${error.message}`, 'error');
+                }
+            } else {
+                editPhoneModal.remove();
             }
         });
     };
@@ -2532,7 +2875,7 @@
             searchModal: document.getElementById('search-modal'),
             closeSearchModal: document.getElementById('close-search-modal'),
             searchInput: document.getElementById('search-input'),
-            executeSearchBtn: document.getElementById('execute-search-btn'),
+            
             searchResultsContainer: document.getElementById('search-results-container'),
 
             categoriesModal: document.getElementById('categories-modal'),
@@ -2596,7 +2939,15 @@
             discountMessage: document.getElementById('discount-message'),
 
             notificationText: document.querySelector('#notification-section p'),
-            notificationIconContainer: document.querySelector('#notification-icon-container')
+            notificationIconContainer: document.querySelector('#notification-icon-container'),
+            
+            editNameBtn: document.getElementById('edit-name-btn'),
+            editPhoneBtn: document.getElementById('edit-phone-btn'),
+            
+            welcomeModal: document.getElementById('welcome-modal'),
+            closeWelcomeModal: document.getElementById('close-welcome-modal'),
+            welcomeLoginBtn: document.getElementById('welcome-login-btn'),
+            welcomeBrowseBtn: document.getElementById('welcome-browse-btn')
         };
 
         updateNotification();
@@ -2615,6 +2966,11 @@
             fetchDiscountCodes();
             populateCategoryOptions();
             updateAddReviewButtonVisibility();
+
+            // عرض رسالة الترحيب للمستخدمين غير المسجلين بعد ثانيتين
+            setTimeout(() => {
+                showWelcomeModal();
+            }, 2000);
 
             if (window.TelegramHandler && isAdmin) {
                 telegramHandler = new window.TelegramHandler();
@@ -2639,6 +2995,17 @@
                 uiElements.addReviewBtn.classList.add('hidden');
             }
         }
+    };
+
+    const showWelcomeModal = () => {
+        if (!welcomeModalShown && (!userId || !currentUserProfile)) {
+            welcomeModalShown = true;
+            uiElements.welcomeModal.classList.remove('hidden');
+        }
+    };
+
+    const hideWelcomeModal = () => {
+        uiElements.welcomeModal.classList.add('hidden');
     };
 
     const populateCategoryOptions = () => {

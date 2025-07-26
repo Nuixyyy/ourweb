@@ -11,7 +11,7 @@
     };
 
     const TELEGRAM_BOT_TOKEN = '7866943018:AAG2aHJ6dbeAaMEqDrnZP8U1VtHfC1O2_cY'; 
-    const TELEGRAM_CHAT_ID = '7348531151';
+    const TELEGRAM_CHAT_ID = '-1002744803377'; // ضع هنا ID الكروب (يبدأ بـ -)
 
     let discountCodesData = [];
     let appliedDiscount = null;

@@ -10,7 +10,7 @@ class TelegramHandler {
         if (this.polling) return;
         this.polling = true;
         console.log('بدء مراقبة أزرار التليجرام...');
-        
+
         while (this.polling) {
             try {
                 await this.checkForUpdates();
@@ -26,11 +26,11 @@ class TelegramHandler {
         try {
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${this.lastUpdateId + 1}&timeout=1`);
             const data = await response.json();
-            
+
             if (data.ok && data.result.length > 0) {
                 for (const update of data.result) {
                     this.lastUpdateId = update.update_id;
-                    
+
                     if (update.callback_query) {
                         await this.handleButtonClick(update.callback_query);
                     }
@@ -46,7 +46,7 @@ class TelegramHandler {
         console.log('تم الضغط على زر:', callbackData);
 
         try {
-           
+
             await this.answerCallbackQuery(callbackQuery.id);
 
             if (callbackData.startsWith('order_completed_')) {
@@ -63,19 +63,19 @@ class TelegramHandler {
 
     async handleOrderCompleted(userId, message) {
         try {
-          
+
             const newText = message.text + '\n\n✅ تم تأكيد الطلب وتم إضافة نقطة للعميل';
-            
+
             await this.editMessage(message.chat.id, message.message_id, newText);
-            
-            
+
+
             if (window.updateUserCompletedOrders) {
                 await window.updateUserCompletedOrders(userId);
             }
             console.log(`تم تأكيد الطلب للمستخدم: ${userId}`);
-            
+
             await this.sendMessage(message.chat.id, `✅ تم تأكيد الطلب للمستخدم: ${userId}\nتم إضافة نقطة إلى حساب العميل.`);
-            
+
         } catch (error) {
             console.error('خطأ في تأكيد الطلب:', error);
         }
@@ -83,16 +83,16 @@ class TelegramHandler {
 
     async handleOrderFailed(userId, message) {
         try {
-           
+
             const newText = message.text + '\n\n❌ تم رفض الطلب';
-            
+
             await this.editMessage(message.chat.id, message.message_id, newText);
-            
+
             console.log(`تم رفض الطلب للمستخدم: ${userId}`);
-            
-            
+
+
             await this.sendMessage(message.chat.id, `❌ تم رفض الطلب للمستخدم: ${userId}`);
-            
+
         } catch (error) {
             console.error('خطأ في رفض الطلب:', error);
         }

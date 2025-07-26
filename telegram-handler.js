@@ -26,11 +26,18 @@ class TelegramHandler {
     async checkForUpdates() {
         try {
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${this.lastUpdateId + 1}&timeout=1`);
+            
+            if (!response.ok) {
+                console.error('خطأ في الاتصال بـ Telegram API:', response.status, response.statusText);
+                return;
+            }
+            
             const data = await response.json();
 
             if (data.ok && data.result.length > 0) {
                 for (const update of data.result) {
                     this.lastUpdateId = update.update_id;
+                    console.log('تحديث جديد:', update);
 
                     if (update.callback_query) {
                         await this.handleButtonClick(update.callback_query);
@@ -44,38 +51,45 @@ class TelegramHandler {
 
     async handleButtonClick(callbackQuery) {
         const { data: callbackData, message, from } = callbackQuery;
-        console.log('تم الضغط على زر:', callbackData);
+        console.log('تم الضغط على زر:', callbackData, 'من المستخدم:', from.first_name);
 
         try {
-
-            await this.answerCallbackQuery(callbackQuery.id);
+            // الرد على الاستعلام أولاً لإزالة حالة التحميل
+            await this.answerCallbackQuery(callbackQuery.id, 'جاري المعالجة...');
 
             if (callbackData.startsWith('order_completed_')) {
                 const userId = callbackData.replace('order_completed_', '');
+                console.log('معالجة تأكيد الطلب للمستخدم:', userId);
                 await this.handleOrderCompleted(userId, message);
             } else if (callbackData.startsWith('order_failed_')) {
                 const userId = callbackData.replace('order_failed_', '');
+                console.log('معالجة رفض الطلب للمستخدم:', userId);
                 await this.handleOrderFailed(userId, message);
+            } else {
+                console.log('نوع زر غير معروف:', callbackData);
+                await this.answerCallbackQuery(callbackQuery.id, 'نوع طلب غير معروف');
             }
         } catch (error) {
             console.error('خطأ في معالجة ضغطة الزر:', error);
+            await this.answerCallbackQuery(callbackQuery.id, 'حدث خطأ أثناء المعالجة');
         }
     }
 
     async handleOrderCompleted(userId, message) {
         try {
-
+            // تعديل الرسالة الأصلية لإزالة الأزرار وإضافة حالة التأكيد
             const newText = message.text + '\n\n✅ تم تأكيد الطلب وتم إضافة نقطة للعميل';
 
-            await this.editMessage(message.chat.id, message.message_id, newText);
+            await this.editMessage(message.chat.id, message.message_id, newText, null);
 
-
+            // تحديث بيانات المستخدم إذا كانت الدالة متوفرة
             if (window.updateUserCompletedOrders) {
                 await window.updateUserCompletedOrders(userId);
             }
+            
             console.log(`تم تأكيد الطلب للمستخدم: ${userId}`);
 
-            // إرسال رسالة تأكيد للكروب
+            // إرسال رسالة تأكيد منفصلة للكروب
             await this.sendMessage(TELEGRAM_GROUP_CHAT_ID, `✅ تم تأكيد الطلب للمستخدم: ${userId}\nتم إضافة نقطة إلى حساب العميل.`);
 
         } catch (error) {
@@ -85,14 +99,14 @@ class TelegramHandler {
 
     async handleOrderFailed(userId, message) {
         try {
-
+            // تعديل الرسالة الأصلية لإزالة الأزرار وإضافة حالة الرفض
             const newText = message.text + '\n\n❌ تم رفض الطلب';
 
-            await this.editMessage(message.chat.id, message.message_id, newText);
+            await this.editMessage(message.chat.id, message.message_id, newText, null);
 
             console.log(`تم رفض الطلب للمستخدم: ${userId}`);
 
-            // إرسال رسالة رفض للكروب
+            // إرسال رسالة رفض منفصلة للكروب
             await this.sendMessage(TELEGRAM_GROUP_CHAT_ID, `❌ تم رفض الطلب للمستخدم: ${userId}`);
 
         } catch (error) {
@@ -102,7 +116,7 @@ class TelegramHandler {
 
     async answerCallbackQuery(callbackQueryId, text = 'تم تسجيل اختيارك') {
         try {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -111,23 +125,46 @@ class TelegramHandler {
                     show_alert: false
                 })
             });
+
+            const result = await response.json();
+            if (!result.ok) {
+                console.error('فشل في الرد على الزر:', result);
+            } else {
+                console.log('تم الرد على الزر بنجاح:', text);
+            }
         } catch (error) {
             console.error('خطأ في الرد على الزر:', error);
         }
     }
 
-    async editMessage(chatId, messageId, newText) {
+    async editMessage(chatId, messageId, newText, replyMarkup = undefined) {
         try {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+            const payload = {
+                chat_id: chatId,
+                message_id: messageId,
+                text: newText,
+                parse_mode: 'Markdown'
+            };
+
+            // إذا تم تمرير null، نزيل الأزرار
+            if (replyMarkup === null) {
+                payload.reply_markup = { inline_keyboard: [] };
+            } else if (replyMarkup) {
+                payload.reply_markup = replyMarkup;
+            }
+
+            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    message_id: messageId,
-                    text: newText,
-                    parse_mode: 'Markdown'
-                })
+                body: JSON.stringify(payload)
             });
+
+            const result = await response.json();
+            if (!result.ok) {
+                console.error('فشل في تعديل الرسالة:', result);
+            } else {
+                console.log('تم تعديل الرسالة بنجاح');
+            }
         } catch (error) {
             console.error('خطأ في تعديل الرسالة:', error);
         }

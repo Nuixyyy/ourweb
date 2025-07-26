@@ -1,4 +1,5 @@
 const TELEGRAM_BOT_TOKEN = '7866943018:AAG2aHJ6dbeAaMEqDrnZP8U1VtHfC1O2_cY';
+const TELEGRAM_GROUP_CHAT_ID = '-1002744803377'; // ضع هنا ID الكروب
 
 class TelegramHandler {
     constructor() {
@@ -74,7 +75,8 @@ class TelegramHandler {
             }
             console.log(`تم تأكيد الطلب للمستخدم: ${userId}`);
 
-            await this.sendMessage(message.chat.id, `✅ تم تأكيد الطلب للمستخدم: ${userId}\nتم إضافة نقطة إلى حساب العميل.`);
+            // إرسال رسالة تأكيد للكروب
+            await this.sendMessage(TELEGRAM_GROUP_CHAT_ID, `✅ تم تأكيد الطلب للمستخدم: ${userId}\nتم إضافة نقطة إلى حساب العميل.`);
 
         } catch (error) {
             console.error('خطأ في تأكيد الطلب:', error);
@@ -90,8 +92,8 @@ class TelegramHandler {
 
             console.log(`تم رفض الطلب للمستخدم: ${userId}`);
 
-
-            await this.sendMessage(message.chat.id, `❌ تم رفض الطلب للمستخدم: ${userId}`);
+            // إرسال رسالة رفض للكروب
+            await this.sendMessage(TELEGRAM_GROUP_CHAT_ID, `❌ تم رفض الطلب للمستخدم: ${userId}`);
 
         } catch (error) {
             console.error('خطأ في رفض الطلب:', error);

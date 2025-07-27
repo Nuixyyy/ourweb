@@ -1681,6 +1681,16 @@ input[name="rating"]:checked ~ * .rating-star {
     border-radius: 0.75rem;
 }
 
+/* الصورة الترحيبية */
+.welcome-image {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.welcome-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
 /* إخفاء أسماء التصنيفات من الصور */
 .category-item .category-name {
     position: absolute;

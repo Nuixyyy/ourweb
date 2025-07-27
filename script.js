@@ -1,4 +1,60 @@
 (function() {
+    // منع فتح أدوات المطور
+    document.addEventListener('keydown', function(e) {
+        // منع F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+U
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+            (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+            (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+
+    // منع النقر بالزر الأيمن
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // منع تحديد النص
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // كشف أدوات المطور المفتوحة
+    let devtools = {
+        open: false,
+        orientation: null
+    };
+
+    const threshold = 160;
+
+    function detectDevTools() {
+        if (window.outerHeight - window.innerHeight > threshold || 
+            window.outerWidth - window.innerWidth > threshold) {
+            if (!devtools.open) {
+                devtools.open = true;
+                // إخفاء المحتوى عند كشف أدوات المطور
+                document.body.style.display = 'none';
+                document.body.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                                background: #000; color: #fff; display: flex; 
+                                align-items: center; justify-content: center; 
+                                font-size: 24px; z-index: 99999;">
+                        🚫 تم حظر أدوات المطور
+                    </div>
+                `;
+            }
+        } else {
+            devtools.open = false;
+        }
+    }
+
+    // فحص دوري لكشف أدوات المطور
+    setInterval(detectDevTools, 500);
 
     const firebaseConfig = {
           apiKey: "AIzaSyD96QIYCM54fOjGszqK9nI-jpf55Xd3kWE",

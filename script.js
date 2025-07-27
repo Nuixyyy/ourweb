@@ -2528,7 +2528,7 @@
 
                     orderMessage += `رسوم التوصيل: ${deliveryFee.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} د.ع\n`;
                     orderMessage += `*المجموع الكلي: ${finalTotal.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} د.ع*\n\n`;
-                    
+
 
 
                     if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === '7570266115:AAGZUk96YHFewLpDlqkVpbDT6PwyZJ2ZVmE' || 

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl"> 
 <head>
@@ -6,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>وصيلي - wseley</title>
 
-    <meta property="og:title" content= "وصيلي - wseley">
-    <meta name="description" content="كل الي تحتاجه في تطوير السيت اب خاص بك في مكان واحد">
-    <meta name="keywords" content="سماعات, كيبوردات, ماوسات, ماوس بادات, سيت اب, بيسي, كمبيوتر, قيمنق, العاب, اكسسوارات كمبيوتر, تطوير سيت اب, setup, gaming setup, keyboard, mouse, headphones, mousepad, gaming accessories">
-    
+    <meta property="og:title" content="وصيلي - wseley">
+    <meta name="description" content="وصيلي - أفضل متجر لاكسسوارات والكمبيوتر في العراق. سماعات، كيبوردات، ماوسات، ماوس بادات وكل ما تحتاجه لتطوير السيت اب الخاص بك. توصيل لجميع محافظات العراق">
+    <meta name="keywords" content="وصيلي, wseley, متجر وصيلي, اكسسوارات ألعاب العراق, سماعات قيمنق العراق, كيبوردات ميكانيكية العراق, ماوسات العاب العراق, ماوس بادات العراق, سيت اب قيمنق العراق, اكسسوارات كمبيوتر العراق, gaming accessories iraq, setup gaming iraq, بغداد, البصرة, أربيل, السليمانية, النجف, كربلاء">
+    <meta name="author" content="وصيلي - wseley">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <meta name="language" content="Arabic">
+    <meta name="geo.region" content="IQ">
+    <meta name="geo.country" content="Iraq">
+    <meta name="geo.placename" content="العراق">
+    <meta name="DC.title" content= "وصيلي - wseley">
+    <meta name="application-name" content="وصيلي">
+    <meta name="msapplication-TileColor" content="#4F46E5">
+    <meta name="theme-color" content="#4F46E5">
+
     <meta property="og:description" content="كل الي تحتاجه في تطوير السيت اب خاص بك في مكان واحد">
     <meta property="og:image" content="logo.png"> <!-- الصورة الي تطلع من يندز الرابط -->
-    <meta property="og:url" content="YOUR_WEBSITE_URL_HERE">
+    <meta property="og:url" content="https://wseley.vercel.app">
     <meta property="og:type" content="website">
 
     <meta name="twitter:card" content="summary_large_image">
@@ -26,6 +35,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Schema Markup للأعمال -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Store",
+        "name": "وصيلي - wseley",
+        "description": "متجر اكسسوارات الألعاب والكمبيوتر",
+        "url": "https://wseley.vercel.app",
+        "logo": "https://wseley.vercel.app/wseley.png",
+        "image": "https://wseley.vercel.app/wseley.png",
+        "priceRange": "$$",
+        "currenciesAccepted": "SAR",
+        "paymentAccepted": "Cash, Credit Card",
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "SA"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "24.7136",
+            "longitude": "46.6753"
+        },
+        "sameAs": [
+            "https://wseley.vercel.app"
+        ]
+    }
+    </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -81,7 +118,7 @@
     <!-- صفحة المنتج المنفصلة -->
     <div id="product-page" class="hidden min-h-screen bg-gray-50">
         <header class="bg-white shadow-sm p-4 md:px-8 flex justify-between items-center sticky top-0 z-50">
-            <div class="relative">
+            <div class="flex items-center">
                 <button id="product-page-cart-btn" class="nav-btn relative p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-indigo-700">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 0a2 2 0 100 4 2 2 0 000-4z"></path>
@@ -89,7 +126,7 @@
                     <span id="product-page-cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-lg border-2 border-white">0</span>
                 </button>
             </div>
-            <div class="flex items-center justify-center w-full">
+            <div class="flex items-center">
                 <a href="#" onclick="goToHome(); return false;" class="flex items-center">
                <!-- الصورة اسم موقع في الهيدر -->     <img src="wseley.png" alt="وصيلي" class="h-10 md:h-12 w-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
                     <span class="text-2xl md:text-3xl font-bold text-indigo-700 tracking-wider hidden" style="font-family: 'Noto Sans Arabic', sans-serif;">وصيلي</span>

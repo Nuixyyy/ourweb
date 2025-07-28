@@ -1,0 +1,34 @@
+
+User-agent: *
+Allow: /
+Allow: /wseley.png
+Allow: /logo.png
+Crawl-delay: 1
+
+# محركات البحث الرئيسية
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# منع الوصول للملفات الحساسة
+Disallow: /script.js
+Disallow: /protection.js
+Disallow: /*.js$
+Disallow: /attached_assets/
+Disallow: /.config/
+
+# خرائط الموقع
+Sitemap: https://wseley.vercel.app/sitemap.xml
+
+# معلومات إضافية
+# Host: wseley.vercel.app

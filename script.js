@@ -175,7 +175,7 @@
                 if (productsData.length > 10) {
                     showAllContainer.innerHTML = `
                         <button id="show-all-products-btn" class="bg-indigo-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 shadow-md transform hover:scale-105">
-                            عرض جميع المنتجات (${productsData.length})
+                            عرض جميع المنتجات
                         </button>
                     `;
                     document.getElementById('show-all-products-btn').addEventListener('click', () => {
